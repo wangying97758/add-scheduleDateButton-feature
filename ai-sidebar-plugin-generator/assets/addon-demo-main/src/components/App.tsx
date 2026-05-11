@@ -31,6 +31,20 @@ function App() {
   useEffect(() => {
     initView({
       onReady: async () => {
+        // 插件鉴权（企业内插件/三方企业插件必须调用）
+        try {
+          const apiBase = process.env.REACT_APP_API_URL || '';
+          const currentUrl = window.location.href;
+          const resp = await fetch(`${apiBase}/api/configPermission?url=${encodeURIComponent(currentUrl)}`);
+          if (!resp.ok) throw new Error(`Auth API ${resp.status}`);
+          const auth = await resp.json();
+          await Dingdocs.base.host.configPermission(
+            auth.agentId, auth.corpId, auth.timeStamp, auth.nonceStr, auth.signature, auth.jsApiList,
+          );
+        } catch (e) {
+          console.error('插件鉴权失败:', e);
+        }
+
         try {
           const currentLocale = await Dingdocs.base.host.getLocale();
           setLocale(getLocale(currentLocale));

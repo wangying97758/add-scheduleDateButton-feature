@@ -11,6 +11,14 @@ const PORT = 3001;
 
 app.use(express.json());
 
+// 允许本地前端 localhost:3000 跨域访问
+app.use((req: Request, res: Response, next: Function) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  if (req.method === 'OPTIONS') { res.sendStatus(200); return; }
+  next();
+});
+
 // Store for caching access tokens and jsapi tickets
 const tokenCache: {
   accessToken: string | null;
