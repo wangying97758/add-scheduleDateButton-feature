@@ -356,9 +356,9 @@ async function scheduleDateButton() {
         const categoryC = sdbGetCategory(cycleData, devType);
         if (!categoryC) { totalSkipped++; continue; }
 
-        // 只推算并写入从第1个工序到节点刷新条件指定节点（含）的日期
+        // 从指定节点（含）开始往后推算并写入，之前的节点保持不变
         const fields: Record<string, any> = {};
-        for (let i = 0; i <= refreshNodeIndex; i++) {
+        for (let i = refreshNodeIndex; i < SDB_PROCESS_FIELDS.length; i++) {
           const processName = SDB_PROCESS_FIELDS[i];
           const d = sdbCalcDate(dateA, processName, categoryC, cycleData, holidayData);
           if (d) {
