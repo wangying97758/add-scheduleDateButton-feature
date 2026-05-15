@@ -6,7 +6,7 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",
-    "start:server": "DOTENV_CONFIG_PATH=local_server/.env.server npx tsx local_server/server.ts"
+    "start:server": "npx tsx local_server/server.ts"
   },
   "eslintConfig": {
     "extends": [

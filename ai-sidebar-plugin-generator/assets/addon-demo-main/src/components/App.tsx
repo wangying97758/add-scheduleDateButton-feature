@@ -28,6 +28,7 @@ function App() {
   const [statusMsg, setStatusMsg] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
   const [authFailed, setAuthFailed] = useState(false);
+  const [authErrorDetail, setAuthErrorDetail] = useState('');
 
   useEffect(() => {
     initView({
@@ -36,14 +37,30 @@ function App() {
         try {
           const apiBase = process.env.REACT_APP_API_URL || '';
           const currentUrl = window.location.href;
-          const resp = await fetch(`${apiBase}/api/configPermission?url=${encodeURIComponent(currentUrl)}`);
-          if (!resp.ok) throw new Error(`Auth API ${resp.status}`);
+          let resp: Response;
+          try {
+            resp = await fetch(`${apiBase}/api/configPermission?url=${encodeURIComponent(currentUrl)}`);
+          } catch (netErr: any) {
+            throw new Error(`后端服务无响应（${apiBase}/api/configPermission）：${netErr?.message}`);
+          }
+          if (!resp.ok) {
+            let body = '';
+            try { body = await resp.text(); } catch {}
+            throw new Error(`后端返回 ${resp.status}：${body}`);
+          }
           const auth = await resp.json();
-          await Dingdocs.base.host.configPermission(
-            auth.agentId, auth.corpId, auth.timeStamp, auth.nonceStr, auth.signature, auth.jsApiList,
-          );
-        } catch (e) {
-          console.error('插件鉴权失败:', e);
+          if (auth.error) throw new Error(`后端鉴权错误：${auth.error}`);
+          try {
+            await Dingdocs.base.host.configPermission(
+              auth.agentId, auth.corpId, auth.timeStamp, auth.nonceStr, auth.signature, auth.jsApiList,
+            );
+          } catch (ddErr: any) {
+            throw new Error(`configPermission 调用失败：${ddErr?.message ?? ddErr}`);
+          }
+        } catch (e: any) {
+          const detail = e?.message || String(e);
+          console.error('插件鉴权失败:', detail);
+          setAuthErrorDetail(detail);
           setAuthFailed(true);
         }
 
@@ -98,6 +115,11 @@ function App() {
               wordBreak: 'break-all',
             }}>
               {locale.authError}
+              {authErrorDetail ? (
+                <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.85 }}>
+                  {authErrorDetail}
+                </div>
+              ) : null}
             </div>
           )}
           <Button

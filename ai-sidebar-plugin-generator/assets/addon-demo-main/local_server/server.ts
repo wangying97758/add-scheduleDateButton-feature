@@ -60,11 +60,17 @@ async function getAccessToken(): Promise<{ accessToken: string; expiresIn: numbe
     throw new Error('DINGTALK_APPKEY and DINGTALK_APPSECRET must be set in environment variables');
   }
 
-  // Request access token from DingTalk API
-  const response = await axios.post('https://api.dingtalk.com/v1.0/oauth2/accessToken', {
-    appKey,
-    appSecret,
-  });
+  // Request access token from DingTalk API (proxy:false 绕过本地代理直连钉钉)
+  let response;
+  try {
+    response = await axios.post('https://api.dingtalk.com/v1.0/oauth2/accessToken', {
+      appKey,
+      appSecret,
+    }, { proxy: false });
+  } catch (err: any) {
+    const body = err?.response?.data;
+    throw new Error(`获取 accessToken 失败 ${err?.response?.status}: ${JSON.stringify(body)}`);
+  }
 
   const data: AccessTokenResponse = response.data;
 
@@ -86,11 +92,12 @@ async function getJsapiTicket(accessToken: string): Promise<{ jsapiTicket: strin
     return { jsapiTicket: tokenCache.jsapiTicket, expiresIn: 7200 };
   }
 
-  // Request jsapi ticket from DingTalk API
+  // Request jsapi ticket from DingTalk API (proxy:false 绕过本地代理直连钉钉)
   const response = await axios.post(
     'https://api.dingtalk.com/v1.0/oauth2/jsapiTickets',
     {},
     {
+      proxy: false,
       headers: {
         'x-acs-dingtalk-access-token': accessToken,
       },
