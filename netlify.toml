@@ -1,0 +1,12 @@
+[build]
+  base    = "ai-sidebar-plugin-generator/assets/addon-demo-main"
+  command = "npm run build"
+  publish = "build"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from   = "/api/configPermission"
+  to     = "/.netlify/functions/configPermission"
+  status = 200

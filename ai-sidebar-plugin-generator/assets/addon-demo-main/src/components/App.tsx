@@ -27,10 +27,26 @@ function App() {
   const [documentInfo, setDocumentInfo] = useState<DocumentInfo | null>(null);
   const [statusMsg, setStatusMsg] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
+  const [authFailed, setAuthFailed] = useState(false);
 
   useEffect(() => {
     initView({
       onReady: async () => {
+        // 插件鉴权（企业内插件/三方企业插件必须调用）
+        try {
+          const apiBase = process.env.REACT_APP_API_URL || '';
+          const currentUrl = window.location.href;
+          const resp = await fetch(`${apiBase}/api/configPermission?url=${encodeURIComponent(currentUrl)}`);
+          if (!resp.ok) throw new Error(`Auth API ${resp.status}`);
+          const auth = await resp.json();
+          await Dingdocs.base.host.configPermission(
+            auth.agentId, auth.corpId, auth.timeStamp, auth.nonceStr, auth.signature, auth.jsApiList,
+          );
+        } catch (e) {
+          console.error('插件鉴权失败:', e);
+          setAuthFailed(true);
+        }
+
         try {
           const currentLocale = await Dingdocs.base.host.getLocale();
           setLocale(getLocale(currentLocale));
@@ -73,10 +89,21 @@ function App() {
 
         {/* 安排日期按钮 - 置顶 */}
         <Card size={'small'} style={{ marginBottom: '12px' }}>
+          {authFailed && (
+            <div style={{
+              marginBottom: '8px',
+              fontSize: '12px',
+              lineHeight: '1.6',
+              color: '#cf1322',
+              wordBreak: 'break-all',
+            }}>
+              {locale.authError}
+            </div>
+          )}
           <Button
             type="primary"
             size={'small'}
-            disabled={loading}
+            disabled={loading || authFailed}
             onClick={handleScheduleDate}
             style={{ width: '100%' }}
           >

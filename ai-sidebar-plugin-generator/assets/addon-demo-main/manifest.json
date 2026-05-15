@@ -5,11 +5,11 @@
   },
   "base": {
     "scriptService": {
-      "url": "http://localhost:3000/script.html"
+      "url": "https://phenomenal-bonbon-59a60f.netlify.app/script.html"
     },
     "sidebars": [
       {
-        "url": "http://localhost:3000/ui.html",
+        "url": "https://phenomenal-bonbon-59a60f.netlify.app/ui.html",
         "title": "AI表格边栏插件"
       }
     ]
