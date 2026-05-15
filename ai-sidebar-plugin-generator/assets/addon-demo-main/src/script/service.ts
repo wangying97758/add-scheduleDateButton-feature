@@ -31,6 +31,8 @@ function getDocumentInfo() {
 const SDB_FIELD_TR4_DATE = 'TR4评审完成';
 /** 主表：对应开发类型 字段（VBA中的 $AZ列，用于查找 CategoryC） */
 const SDB_FIELD_DEV_TYPE = '对应开发类型';
+/** 主表：节点刷新条件 字段（值为工序名，推算写入至该节点含；空则跳过该行） */
+const SDB_FIELD_REFRESH_NODE = '节点刷新条件';
 /** 产品族对应周期：类别字段名（VBA中的 AB列） */
 const SDB_CYCLE_CATEGORY_FIELD = '类别';
 
@@ -337,6 +339,14 @@ async function scheduleDateButton() {
       for (const record of pageResult.records) {
         totalProcessed++;
 
+        // 节点刷新条件为空则跳过该行
+        const refreshNode = sdbExtractString(record.getCellValue(SDB_FIELD_REFRESH_NODE));
+        if (!refreshNode) { totalSkipped++; continue; }
+
+        // 找节点在工序列表中的位置（找不到说明值填写有误，跳过）
+        const refreshNodeIndex = SDB_PROCESS_FIELDS.indexOf(refreshNode);
+        if (refreshNodeIndex === -1) { totalSkipped++; continue; }
+
         const dateA = sdbParseDate(record.getCellValue(SDB_FIELD_TR4_DATE));
         if (!dateA) { totalSkipped++; continue; }
 
@@ -346,8 +356,10 @@ async function scheduleDateButton() {
         const categoryC = sdbGetCategory(cycleData, devType);
         if (!categoryC) { totalSkipped++; continue; }
 
+        // 只推算并写入从第1个工序到节点刷新条件指定节点（含）的日期
         const fields: Record<string, any> = {};
-        for (const processName of SDB_PROCESS_FIELDS) {
+        for (let i = 0; i <= refreshNodeIndex; i++) {
+          const processName = SDB_PROCESS_FIELDS[i];
           const d = sdbCalcDate(dateA, processName, categoryC, cycleData, holidayData);
           if (d) {
             fields[processName] = sdbFormatDate(d) as any;
@@ -372,7 +384,7 @@ async function scheduleDateButton() {
 
     return {
       success: true,
-      message: `安排日期完成！共扫描 ${totalProcessed} 条，更新 ${totalUpdated} 条，跳过 ${totalSkipped} 条（缺少TR4日期或开发类型）`
+      message: `安排日期完成！共扫描 ${totalProcessed} 条，更新 ${totalUpdated} 条，跳过 ${totalSkipped} 条（节点刷新条件为空、节点名有误或缺少TR4日期/开发类型）`
     };
   } catch (err: any) {
     console.error('scheduleDateButton error:', err);
